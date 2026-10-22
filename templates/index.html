@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="description"
+        content="Aplikasi demonstrasi prediksi risiko gagal bayar kartu kredit menggunakan Logistic Regression."
+    >
+    <title>CreditRisk | Prediksi Risiko Kredit</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="/">
+            <span class="brand-mark">CR</span>
+            <span>CreditRisk<span class="brand-dot">.</span></span>
+        </a>
+        <span class="topbar-label">TA-03 · Machine Learning</span>
+    </header>
+
+    <main class="page">
+        <section class="hero">
+            <p class="eyebrow">CREDIT DEFAULT PREDICTION</p>
+            <h1>Kenali risiko kredit<br><span>sebelum mengambil keputusan.</span></h1>
+            <p class="hero-description">
+                Masukkan data nasabah untuk mendapatkan estimasi risiko gagal
+                bayar berdasarkan model Logistic Regression yang dilatih dengan
+                pendekatan SMOTENC.
+            </p>
+        </section>
+
+        {% if error %}
+        <section class="alert alert-error" role="alert">
+            <strong>Prediksi belum berhasil</strong>
+            <p>{{ error }}</p>
+        </section>
+        {% endif %}
+
+        {% if result %}
+        <section class="result-card" aria-live="polite">
+            <div class="result-heading">
+                <div>
+                    <p class="eyebrow">HASIL PREDIKSI</p>
+                    <h2>Estimasi risiko nasabah</h2>
+                </div>
+                <span class="status-pill {{ 'status-risk' if result.is_default else 'status-safe' }}">
+                    {{ 'Berisiko gagal bayar' if result.is_default else 'Tidak terindikasi gagal bayar' }}
+                </span>
+            </div>
+
+            <div class="probability-row">
+                <div>
+                    <p class="muted">Probabilitas prediksi kelas gagal bayar</p>
+                    <p class="probability">{{ "%.2f"|format(result.probability) }}<span>%</span></p>
+                </div>
+                <div class="probability-track" role="img"
+                     aria-label="Probabilitas gagal bayar {{ '%.2f'|format(result.probability) }} persen">
+                    <div class="probability-fill"
+                         style="width: {{ result.probability }}%;"></div>
+                </div>
+            </div>
+
+            <p class="result-note">
+                {% if result.is_default %}
+                Model mengklasifikasikan data ini ke kelas gagal bayar (1).
+                {% else %}
+                Model mengklasifikasikan data ini ke kelas tidak gagal bayar (0).
+                {% endif %}
+                Hasil merupakan estimasi model, bukan keputusan kredit final.
+            </p>
+        </section>
+        {% endif %}
+
+        <section class="form-card">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">DATA NASABAH</p>
+                    <h2>Masukkan informasi</h2>
+                </div>
+                <span class="required-note">* Wajib diisi</span>
+            </div>
+
+            <form method="POST" action="/" id="prediction-form">
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="LIMIT_BAL">Limit kredit (NT$) *</label>
+                        <input id="LIMIT_BAL" name="LIMIT_BAL" type="number"
+                               min="1" step="any" required
+                               value="{{ form_data.get('LIMIT_BAL', '50000') }}">
+                        <small>Total batas kredit yang diberikan.</small>
+                    </div>
+
+                    <div class="field">
+                        <label for="AGE">Usia (tahun) *</label>
+                        <input id="AGE" name="AGE" type="number"
+                               min="21" max="100" required
+                               value="{{ form_data.get('AGE', '30') }}">
+                    </div>
+
+                    <div class="field">
+                        <label for="EDUCATION">Pendidikan *</label>
+                        <select id="EDUCATION" name="EDUCATION" required>
+                            <option value="1" {% if form_data.get('EDUCATION', '2') == '1' %}selected{% endif %}>Pascasarjana</option>
+                            <option value="2" {% if form_data.get('EDUCATION', '2') == '2' %}selected{% endif %}>Universitas</option>
+                            <option value="3" {% if form_data.get('EDUCATION') == '3' %}selected{% endif %}>Sekolah menengah</option>
+                            <option value="4" {% if form_data.get('EDUCATION') == '4' %}selected{% endif %}>Lainnya</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="MARRIAGE">Status pernikahan *</label>
+                        <select id="MARRIAGE" name="MARRIAGE" required>
+                            <option value="1" {% if form_data.get('MARRIAGE', '2') == '1' %}selected{% endif %}>Menikah</option>
+                            <option value="2" {% if form_data.get('MARRIAGE', '2') == '2' %}selected{% endif %}>Belum menikah</option>
+                            <option value="3" {% if form_data.get('MARRIAGE') == '3' %}selected{% endif %}>Lainnya</option>
+                        </select>
+                    </div>
+
+                    
+                    <div class="field">
+                        <label for="PAY_0">Status pembayaran terakhir (PAY_0) *</label>
+                        <select id="PAY_0" name="PAY_0" required>
+                            <option value="-2" {% if form_data.get('PAY_0', '0') == '-2' %}selected{% endif %}>-2 — Tidak ada penggunaan / tidak ada tagihan</option>
+                            <option value="-1" {% if form_data.get('PAY_0', '0') == '-1' %}selected{% endif %}>-1 — Pembayaran tepat waktu</option>
+                            <option value="0" {% if form_data.get('PAY_0', '0') == '0' %}selected{% endif %}>0 — Tidak ada status keterlambatan tercatat</option>
+                            {% for value in range(1, 9) %}
+                            <option value="{{ value }}" {% if form_data.get('PAY_0', '0') == value|string %}selected{% endif %}>
+                                {{ value }} — Terlambat {{ value }} bulan{% if value == 8 %} atau lebih{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small>Kode status pembayaran pada bulan terakhir yang tercatat.</small>
+                    </div>
+
+<div class="field">
+    <label for="PAY_2">Status pembayaran 2 bulan lalu (PAY_2) *</label>
+    <select id="PAY_2" name="PAY_2" required>
+        <option value="-2" {% if form_data.get('PAY_2', '0') == '-2' %}selected{% endif %}>-2 — Tidak ada penggunaan / tidak ada tagihan</option>
+        <option value="-1" {% if form_data.get('PAY_2', '0') == '-1' %}selected{% endif %}>-1 — Pembayaran tepat waktu</option>
+        <option value="0" {% if form_data.get('PAY_2', '0') == '0' %}selected{% endif %}>0 — Tidak ada status keterlambatan tercatat</option>
+        {% for value in range(1, 9) %}
+        <option value="{{ value }}" {% if form_data.get('PAY_2', '0') == value|string %}selected{% endif %}>
+            {{ value }} — Terlambat {{ value }} bulan{% if value == 8 %} atau lebih{% endif %}
+        </option>
+        {% endfor %}
+    </select>
+    <small>Kode status pembayaran dari dua bulan sebelumnya.</small>
+</div>
+
+<div class="field">
+    <label for="PAY_3">Status pembayaran 3 bulan lalu (PAY_3) *</label>
+    <select id="PAY_3" name="PAY_3" required>
+        <option value="-2" {% if form_data.get('PAY_3', '0') == '-2' %}selected{% endif %}>-2 — Tidak ada penggunaan / tidak ada tagihan</option>
+        <option value="-1" {% if form_data.get('PAY_3', '0') == '-1' %}selected{% endif %}>-1 — Pembayaran tepat waktu</option>
+        <option value="0" {% if form_data.get('PAY_3', '0') == '0' %}selected{% endif %}>0 — Tidak ada status keterlambatan tercatat</option>
+        {% for value in range(1, 9) %}
+        <option value="{{ value }}" {% if form_data.get('PAY_3', '0') == value|string %}selected{% endif %}>
+            {{ value }} — Terlambat {{ value }} bulan{% if value == 8 %} atau lebih{% endif %}
+        </option>
+        {% endfor %}
+    </select>
+    <small>Kode status pembayaran dari tiga bulan sebelumnya.</small>
+</div>
+
+
+                    <div class="field">
+                        <label for="BILL_AMT1">Tagihan terakhir (NT$) *</label>
+                        <input id="BILL_AMT1" name="BILL_AMT1" type="number"
+                               step="any" required
+                               value="{{ form_data.get('BILL_AMT1', '40000') }}">
+                    </div>
+
+                    <div class="field">
+                        <label for="PAY_AMT1">Pembayaran terakhir (NT$) *</label>
+                        <input id="PAY_AMT1" name="PAY_AMT1" type="number"
+                               min="0" step="any" required
+                               value="{{ form_data.get('PAY_AMT1', '2000') }}">
+                    </div>
+                </div>
+
+                <div class="form-footer">
+                    <p>Pastikan nilai yang dimasukkan sesuai dengan format dataset.</p>
+                    <button type="submit" id="submit-button">
+                        <span>Prediksi risiko</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <section class="disclaimer">
+            <strong>Catatan akademik</strong>
+            <p>
+                Aplikasi ini dibuat untuk demonstrasi klasifikasi machine learning.
+                Prediksi tidak menjamin kejadian gagal bayar dan tidak boleh
+                menjadi satu-satunya dasar keputusan finansial.
+            </p>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <span>CreditRisk · TA-03</span>
+        <span>Logistic Regression + SMOTENC</span>
+    </footer>
+</body>
+</html>

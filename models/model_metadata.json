@@ -1,0 +1,52 @@
+{
+    "project": "TA-03 Credit Risk Prediction",
+    "algorithm": "Logistic Regression",
+    "selected_model": "Logistic Regression + SMOTENC",
+    "target": "default.payment.next.month",
+    "positive_class": 1,
+    "negative_class": 0,
+    "default_threshold": 0.5,
+    "features": [
+        "LIMIT_BAL",
+        "AGE",
+        "EDUCATION",
+        "MARRIAGE",
+        "PAY_0",
+        "PAY_2",
+        "PAY_3",
+        "BILL_AMT1",
+        "PAY_AMT1"
+    ],
+    "categorical_features": [
+        "EDUCATION",
+        "MARRIAGE"
+    ],
+    "numerical_features": [
+        "LIMIT_BAL",
+        "AGE",
+        "PAY_0",
+        "PAY_2",
+        "PAY_3",
+        "BILL_AMT1",
+        "PAY_AMT1"
+    ],
+    "education_options": {
+        "1": "Graduate School",
+        "2": "University",
+        "3": "High School",
+        "4": "Others"
+    },
+    "marriage_options": {
+        "1": "Married",
+        "2": "Single",
+        "3": "Others"
+    },
+    "metrics": {
+        "Accuracy": 0.6490288010716678,
+        "Precision": 0.3426829268292683,
+        "Recall": 0.6376701966717095,
+        "F1-Score": 0.44579587519830777,
+        "ROC-AUC": 0.6990380329575586
+    },
+    "random_state": 42
+}
